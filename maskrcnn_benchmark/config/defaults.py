@@ -44,9 +44,9 @@ _C.INPUT.MIN_SIZE_TRAIN = (800,)  # (800,)
 # Maximum size of the side of the image during training
 _C.INPUT.MAX_SIZE_TRAIN = 1333
 # Size of the smallest side of the image during testing
-_C.INPUT.MIN_SIZE_TEST = 800
+_C.INPUT.MIN_SIZE_TEST = 1400
 # Maximum size of the side of the image during testing
-_C.INPUT.MAX_SIZE_TEST = 1333
+_C.INPUT.MAX_SIZE_TEST = 2000
 # Values to be used for image normalization
 _C.INPUT.PIXEL_MEAN = [102.9801, 115.9465, 122.7717]
 # Values to be used for image normalization
@@ -399,7 +399,7 @@ _C.SOLVER.CHECKPOINT_PERIOD = 2500
 # Number of images per batch
 # This is global, so if we have 8 GPUs and IMS_PER_BATCH = 16, each GPU will
 # see 2 images per batch
-_C.SOLVER.IMS_PER_BATCH = 16
+_C.SOLVER.IMS_PER_BATCH = 4
 
 # ---------------------------------------------------------------------------- #
 # Specific test options
@@ -418,6 +418,6 @@ _C.TEST.DETECTIONS_PER_IMG = 100
 # ---------------------------------------------------------------------------- #
 # Misc options
 # ---------------------------------------------------------------------------- #
-_C.OUTPUT_DIR = "."
+_C.OUTPUT_DIR = "/home/mvl/Documents/maskrcnn-benchmark/models/coco2/"
 
 _C.PATHS_CATALOG = os.path.join(os.path.dirname(__file__), "paths_catalog.py")

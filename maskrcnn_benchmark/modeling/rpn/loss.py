@@ -56,6 +56,7 @@ class RPNLossComputation(object):
     def prepare_targets(self, anchors, targets):
         labels = []
         regression_targets = []
+        matched_idxss=[]
         for anchors_per_image, targets_per_image in zip(anchors, targets):
             matched_targets = self.match_targets_to_anchors(
                 anchors_per_image, targets_per_image, self.copied_fields
@@ -85,8 +86,9 @@ class RPNLossComputation(object):
 
             labels.append(labels_per_image)
             regression_targets.append(regression_targets_per_image)
+            matched_idxss.append(matched_idxs)
 
-        return labels, regression_targets
+        return matched_idxss, labels, regression_targets
 
 
     def __call__(self, anchors, objectness, box_regression, targets):
@@ -102,7 +104,7 @@ class RPNLossComputation(object):
             box_loss (Tensor
         """
         anchors = [cat_boxlist(anchors_per_image) for anchors_per_image in anchors]
-        labels, regression_targets = self.prepare_targets(anchors, targets)
+        matched_idxss, labels, regression_targets = self.prepare_targets(anchors, targets)
         sampled_pos_inds, sampled_neg_inds = self.fg_bg_sampler(labels)
         sampled_pos_inds = torch.nonzero(torch.cat(sampled_pos_inds, dim=0)).squeeze(1)
         sampled_neg_inds = torch.nonzero(torch.cat(sampled_neg_inds, dim=0)).squeeze(1)
@@ -116,6 +118,9 @@ class RPNLossComputation(object):
 
         labels = torch.cat(labels, dim=0)
         regression_targets = torch.cat(regression_targets, dim=0)
+        matched_idxss = torch.cat(matched_idxss, dim=0)
+
+        # self.coverrate(matched_idxss, targets, sampled_pos_inds)
 
         box_loss = smooth_l1_loss(
             box_regression[sampled_pos_inds],
@@ -129,6 +134,24 @@ class RPNLossComputation(object):
         )
 
         return objectness_loss, box_loss
+
+    def coverrate(self,matched_idxss,targets,sampled_pos_inds):
+        num_gt=0
+        num_gt_covered=0
+        num_anchors=matched_idxss.shape[0]/targets.__len__()
+        for i in range(targets.__len__()):
+            ind1=sampled_pos_inds>=i*num_anchors
+            ind2=sampled_pos_inds<(i+1)*num_anchors
+            ind=ind1.__mul__(ind2)
+            mark=torch.zeros(targets[i].bbox.shape[0])
+            mark[matched_idxss[sampled_pos_inds[ind]]]=1
+            if torch.nonzero(mark==0).shape[0]>0:
+                print(targets[i].bbox[torch.nonzero(mark==0)])#mode:xyxy
+            num_gt_covered+=torch.sum(mark)
+            num_gt+=targets[i].bbox.shape[0]
+
+        print("number of gt:",num_gt)
+        print("number of gt covered:",num_gt_covered)
 
 # This function should be overwritten in RetinaNet
 def generate_rpn_labels(matched_targets):
